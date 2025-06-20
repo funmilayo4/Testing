@@ -440,4 +440,112 @@
                        ctx.save();
                        ctx.textAlign = 'center';
                        ctx.textBaseline = 'middle';
-                       ctx.font = "6
+                       ctx.font = "600 20px 'Inter', sans-serif";
+                       ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                       ctx.fillText('No data yet', width / 2, height / 2);
+                       ctx.restore();
+                   }
+               }
+           };
+           
+           const drawEmptyChart = () => {
+               const ctx = document.getElementById('revenueChart').getContext('2d');
+               if (revenueChart) {
+                   revenueChart.destroy();
+               }
+               revenueChart = new Chart(ctx, {
+                   type: 'bar',
+                   data: {
+                       labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                       datasets: [{
+                           label: 'Revenue',
+                           data: [0, 0, 0, 0, 0, 0, 0],
+                           backgroundColor: 'rgba(120, 119, 198, 0.5)',
+                           borderColor: 'rgba(120, 119, 198, 1)',
+                           borderWidth: 1.5,
+                           borderRadius: 4,
+                       }]
+                   },
+                   options: {
+                       responsive: true,
+                       maintainAspectRatio: false,
+                       plugins: { legend: { display: false } },
+                       scales: {
+                           y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'rgba(255, 255, 255, 0.7)' } },
+                           x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: 'rgba(255, 255, 255, 0.7)' } }
+                       }
+                   },
+                   plugins: [noDataTextPlugin]
+               });
+           };
+
+           // --- Main Application Logic ---
+           const initializeDashboard = () => {
+               const agentName = localStorage.getItem('mypos_agent');
+               const posId = localStorage.getItem('mypos_posId');
+               const posProvider = localStorage.getItem('mypos_provider');
+
+               if (!agentName) {
+                   createAgentModal.classList.add('visible');
+               } else {
+                   agentTitle.textContent = `Agent: ${agentName}`;
+                   agentDisplaySection.style.display = 'flex';
+                   if (posId && posProvider) {
+                       connectPosBtn.textContent = '✅ POS Connected';
+                       connectPosBtn.disabled = true;
+                       metricsGrid.style.display = 'grid';
+                       chartSection.style.display = 'block';
+                       posProviderDisplay.textContent = posProvider;
+                       posIdDisplay.textContent = posId;
+                       drawEmptyChart();
+                   }
+               }
+           };
+
+           // --- Event Listeners ---
+           createAgentBtn.addEventListener('click', () => {
+               const name = agentNameInput.value.trim();
+               if (name === '') {
+                   alert('Please enter an agent name.');
+                   return;
+               }
+               localStorage.setItem('mypos_agent', name);
+               createAgentModal.classList.remove('visible');
+               agentTitle.textContent = `Agent: ${name}`;
+               agentDisplaySection.style.display = 'flex';
+           });
+
+           connectPosBtn.addEventListener('click', () => {
+               if(connectPosBtn.disabled) return;
+               connectPosModal.classList.add('visible');
+           });
+
+           cancelPosBtn.addEventListener('click', () => {
+               connectPosModal.classList.remove('visible');
+           });
+
+           connectBtn.addEventListener('click', () => {
+               const posId = posIdInput.value.trim();
+               const provider = posProviderSelect.value;
+               if (posId === '' || provider === '') {
+                   alert('Please fill in both POS ID and provider.');
+                   return;
+               }
+               localStorage.setItem('mypos_posId', posId);
+               localStorage.setItem('mypos_provider', provider);
+               connectPosModal.classList.remove('visible');
+               showToast('✅ Connected');
+               connectPosBtn.textContent = '✅ POS Connected';
+               connectPosBtn.disabled = true;
+               metricsGrid.style.display = 'grid';
+               chartSection.style.display = 'block';
+               posProviderDisplay.textContent = provider;
+               posIdDisplay.textContent = posId;
+               drawEmptyChart();
+           });
+
+           initializeDashboard();
+       });
+   </script>
+</body>
+</html>
