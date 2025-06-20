@@ -1,1 +1,443 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>FloatFlow Dashboard</title>
+   <!-- Chart.js for data visualization -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+   <!-- Google Fonts - Inter -->
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+   <style>
+       /* Base styles for all elements */
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+       }
 
+       /* Body styling */
+       body {
+           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background:
+               radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+               radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%),
+               radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.4), transparent 50%),
+               linear-gradient(135deg, #1e1e2e 0%, #2d1b69 50%, #11152c 100%);
+           min-height: 100vh;
+           color: #fff;
+           overflow-x: hidden;
+           position: relative;
+       }
+
+       /* Subtle noise overlay */
+       body::before {
+           content: '';
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100%;
+           height: 100%;
+           background: url('data:image/svg+xml,<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.03"/></svg>');
+           pointer-events: none;
+           z-index: 1;
+       }
+
+       /* Floating orbs */
+       .floating-orb {
+           position: fixed;
+           width: 300px;
+           height: 300px;
+           border-radius: 50%;
+           background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.08), transparent 70%);
+           backdrop-filter: blur(50px);
+           animation: float 20s infinite ease-in-out;
+           pointer-events: none;
+           z-index: 0;
+       }
+
+       .floating-orb:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+       .floating-orb:nth-child(2) { top: 60%; right: 10%; animation-delay: -10s; }
+
+       @keyframes float {
+           0%, 100% { transform: translate(0, 0) rotate(0deg); }
+           33% { transform: translate(100px, -50px) rotate(120deg); }
+           66% { transform: translate(-50px, 100px) rotate(240deg); }
+       }
+
+       /* Main content container */
+       .container {
+           max-width: 1400px;
+           width: 100%;
+           margin: 0 auto;
+           padding: 40px 20px;
+           position: relative;
+           z-index: 2;
+       }
+
+       /* Header section */
+       .header {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           margin-bottom: 40px;
+           position: relative;
+       }
+
+       .greeting {
+           font-size: 42px;
+           font-weight: 700;
+           background: linear-gradient(135deg, #ffffff 0%, #a8edea 100%);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+           background-clip: text;
+           margin-bottom: 8px;
+           letter-spacing: -0.02em;
+       }
+
+       .subtext {
+           font-size: 18px;
+           color: rgba(255, 255, 255, 0.7);
+           font-weight: 400;
+       }
+       
+       /* NEW: Container for nav buttons */
+       .nav-actions {
+           display: flex;
+           gap: 16px;
+       }
+
+       /* Glassmorphic elements base style */
+       .glassmorphic-card {
+           background: rgba(255, 255, 255, 0.15);
+           backdrop-filter: blur(15px) saturate(180%);
+           border: 1px solid rgba(255, 255, 255, 0.2);
+           border-radius: 24px;
+           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3);
+           position: relative;
+           overflow: hidden;
+           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+       }
+
+       .glassmorphic-card:hover {
+           background: rgba(255, 255, 255, 0.2);
+           border-color: rgba(255, 255, 255, 0.3);
+           transform: translateY(-5px);
+           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 15px 45px rgba(0, 0, 0, 0.4);
+       }
+
+       .nav-pill {
+           display: flex;
+           align-items: center;
+           gap: 8px;
+           padding: 16px 32px;
+           color: rgba(255, 255, 255, 0.9);
+           text-decoration: none;
+           font-weight: 600;
+           font-size: 16px;
+           background: rgba(255, 255, 255, 0.08);
+           backdrop-filter: blur(20px) saturate(180%);
+           border: 1px solid rgba(255, 255, 255, 0.2);
+           border-radius: 50px;
+           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.3);
+           overflow: hidden;
+           transition: all 0.2s ease-in-out;
+       }
+       .nav-pill:hover {
+           background: rgba(255, 255, 255, 0.15);
+           border-color: rgba(255, 255, 255, 0.3);
+           transform: translateY(-2px);
+       }
+
+       /* Metrics Grid */
+       .metrics-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+           gap: 24px;
+           margin-bottom: 40px;
+       }
+
+       .metric-card {
+           padding: 32px;
+           position: relative;
+           overflow: hidden;
+           background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.05) 100%);
+           backdrop-filter: blur(15px);
+       }
+
+       .metric-card::before {
+           content: '';
+           position: absolute; top: 0; left: 0; right: 0;
+           height: 2px;
+           background: linear-gradient(90deg, #4F46E5, #7C3AED, #EC4899);
+           opacity: 0.8;
+       }
+       .metric-card:hover {
+           transform: translateY(-8px) scale(1.02);
+       }
+
+       .metric-title {
+           font-size: 14px;
+           color: rgba(255, 255, 255, 0.7);
+           margin-bottom: 16px;
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           font-weight: 500;
+           text-transform: uppercase;
+       }
+
+       .metric-value {
+           font-size: 48px;
+           font-weight: 800;
+           margin-bottom: 8px;
+           background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+           background-clip: text;
+       }
+       .metric-change { font-size: 14px; color: #4ADE80; font-weight: 500; }
+       .icon { width: 24px; height: 24px; opacity: 0.8; }
+
+       /* Chart section */
+       .chart-section {
+           padding: 32px;
+           margin-bottom: 32px;
+       }
+       .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+       .chart-title { font-size: 24px; font-weight: 700; color: rgba(255, 255, 255, 0.95); }
+
+       .chart-container {
+           position: relative;
+           height: 350px;
+           max-height: 350px;
+           width: 100%;
+       }
+       
+       /* Modal overlay */
+       .modal-overlay {
+           position: fixed; top: 0; left: 0;
+           width: 100%; height: 100%;
+           background: rgba(0, 0, 0, 0.5);
+           backdrop-filter: blur(8px);
+           z-index: 100;
+           display: flex; justify-content: center; align-items: center;
+           opacity: 0; visibility: hidden;
+           transition: opacity 0.3s ease, visibility 0.3s ease;
+       }
+       .modal-overlay.visible { opacity: 1; visibility: visible; }
+       .modal-content { padding: 40px; width: 90%; max-width: 500px; text-align: center; }
+       .modal-title { font-size: 24px; font-weight: 700; margin-bottom: 16px; color: rgba(255, 255, 255, 0.95); }
+       .modal-text { font-size: 16px; color: rgba(255, 255, 255, 0.7); margin-bottom: 24px; line-height: 1.6; }
+       .form-group { margin-bottom: 20px; text-align: left; }
+       .form-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, 0.8); }
+       .form-input, .form-select {
+           width: 100%; padding: 14px 18px;
+           border-radius: 12px;
+           border: 1px solid rgba(255, 255, 255, 0.2);
+           background: rgba(255, 255, 255, 0.1);
+           color: #fff; font-size: 16px; transition: all 0.2s ease;
+       }
+       .form-input:focus, .form-select:focus {
+           outline: none; border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.15);
+       }
+       .primary-btn {
+           background: linear-gradient(90deg, #4F46E5, #7C3AED);
+           border: none; color: #fff; padding: 16px 24px;
+           border-radius: 12px; font-size: 16px; font-weight: 600;
+           cursor: pointer; transition: all 0.3s ease; width: 100%;
+       }
+       .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); }
+       .secondary-btn {
+           background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(255, 255, 255, 0.8);
+           padding: 14px 24px; border-radius: 12px; font-size: 16px; font-weight: 500;
+           cursor: pointer; transition: all 0.3s ease; margin-top: 10px;
+       }
+       .secondary-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); }
+       .agent-display-section {
+           padding: 32px; margin-bottom: 40px;
+           display: flex; justify-content: space-between; align-items: center;
+       }
+       .agent-title { font-size: 24px; font-weight: 700; color: rgba(255, 255, 255, 0.95); }
+       .caution-box {
+           padding: 16px; border-radius: 12px;
+           background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3);
+           color: #FBBF24; margin-bottom: 24px;
+           text-align: left; font-size: 14px;
+       }
+       .toast-message {
+           position: fixed; bottom: -100px; left: 50%;
+           transform: translateX(-50%); padding: 12px 24px;
+           border-radius: 12px; background: rgba(74, 222, 128, 0.8);
+           backdrop-filter: blur(10px); color: #fff; font-weight: 600;
+           z-index: 200; transition: bottom 0.5s ease-in-out;
+       }
+
+       @media (max-width: 768px) {
+           .container { padding: 20px 15px; }
+           .greeting { font-size: 32px; }
+           .header { flex-direction: column; gap: 20px; text-align: center; }
+           .metrics-grid { grid-template-columns: 1fr; gap: 16px; }
+           .metric-card, .chart-section { padding: 24px; }
+           .metric-value { font-size: 36px; }
+           .agent-display-section { flex-direction: column; gap: 20px; text-align: center; }
+           .chart-header { flex-direction: column; gap: 15px; align-items: flex-start; }
+           .chart-container { height: 250px; }
+           .nav-actions { justify-content: center; }
+       }
+   </style>
+</head>
+<body>
+
+   <div class="floating-orb"></div>
+   <div class="floating-orb"></div>
+
+   <div class="container">
+       <!-- Header -->
+       <div class="header">
+           <div>
+               <div class="greeting">Good morning, Israel! 👋</div>
+               <div class="subtext">Here's what's happening with your terminals today</div>
+           </div>
+           <!-- UPDATED: Nav actions are now in a container -->
+           <div class="nav-actions">
+               <a href="#" class="nav-pill">Dashboard</a>
+               <a href="#" class="nav-pill">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                   <span>Settings</span>
+               </a>
+           </div>
+       </div>
+
+       <!-- Agent Display Section (Initially hidden) -->
+       <div id="agent-display-section" class="glassmorphic-card agent-display-section" style="display: none;">
+           <div id="agent-title" class="agent-title"></div>
+           <button id="connect-pos-btn" class="primary-btn" style="width: auto;">Connect POS Terminal</button>
+       </div>
+       <div id="toast-message" class="toast-message"></div>
+
+       <!-- Metrics Cards (Initially hidden) -->
+       <div id="metrics-grid" class="metrics-grid" style="display: none;">
+            <div class="metric-card glassmorphic-card">
+               <div class="metric-title">
+                   <svg class="icon" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/></svg>
+                   Today's Revenue
+               </div>
+               <div class="metric-value">₦0.00</div>
+               <div class="metric-change">No data yet</div>
+           </div>
+            <div class="metric-card glassmorphic-card">
+               <div class="metric-title">
+                    <svg class="icon" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
+                   Transactions
+               </div>
+               <div class="metric-value">0</div>
+               <div class="metric-change">Awaiting first sync</div>
+           </div>
+            <div class="metric-card glassmorphic-card">
+               <div class="metric-title">
+                  <svg class="icon" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                   POS Provider
+               </div>
+               <div id="pos-provider-display" class="metric-value" style="font-size: 36px;">-</div>
+               <div class="metric-change">Device ID: <span id="pos-id-display">-</span></div>
+           </div>
+       </div>
+
+       <!-- Chart Section (Initially hidden) -->
+       <div id="chart-section" class="chart-section glassmorphic-card" style="display: none;">
+           <div class="chart-header">
+               <div class="chart-title">Revenue Overview</div>
+           </div>
+           <div class="chart-container">
+               <canvas id="revenueChart"></canvas>
+           </div>
+       </div>
+   </div>
+
+   <!-- Create Agent Modal -->
+   <div id="create-agent-modal" class="modal-overlay">
+       <div class="modal-content glassmorphic-card">
+           <h2 class="modal-title">Welcome to MyPOS Dashboard!</h2>
+           <p class="modal-text">You haven’t set up any agents or POS terminals yet. Let's start by creating an agent profile.</p>
+           <div class="form-group">
+               <label for="agent-name-input" class="form-label">Agent name</label>
+               <input type="text" id="agent-name-input" class="form-input" placeholder="e.g., Precious Stores">
+           </div>
+           <button id="create-agent-btn" class="primary-btn">Create Agent</button>
+       </div>
+   </div>
+
+   <!-- Connect POS Modal -->
+   <div id="connect-pos-modal" class="modal-overlay">
+       <div class="modal-content glassmorphic-card">
+           <h2 class="modal-title">Connect a POS Terminal</h2>
+           <div class="caution-box">
+               ⚠️ We only fetch transaction history; we do not alter your POS balance.
+           </div>
+           <div class="form-group">
+               <label for="pos-id-input" class="form-label">POS Device ID</label>
+               <input type="text" id="pos-id-input" class="form-input" placeholder="Enter device serial or ID">
+           </div>
+           <div class="form-group">
+               <label for="pos-provider-select" class="form-label">Provider</label>
+               <select id="pos-provider-select" class="form-select">
+                   <option value="">Select a provider</option>
+                   <option value="Opay">Opay</option>
+                   <option value="PalmPay">PalmPay</option>
+                   <option value="Moniepoint">Moniepoint</option>
+                   <option value="Access Bank">Access Bank</option>
+                   <option value="Zenith Bank">Zenith Bank</option>
+                   <option value="Kuda">Kuda</option>
+                   <option value="First Bank">First Bank</option>
+               </select>
+           </div>
+           <button id="connect-btn" class="primary-btn">Connect</button>
+           <button id="cancel-pos-btn" class="secondary-btn">Cancel</button>
+       </div>
+   </div>
+
+   <script>
+       document.addEventListener('DOMContentLoaded', () => {
+           // --- DOM Element Selectors ---
+           const createAgentModal = document.getElementById('create-agent-modal');
+           const connectPosModal = document.getElementById('connect-pos-modal');
+           const agentNameInput = document.getElementById('agent-name-input');
+           const createAgentBtn = document.getElementById('create-agent-btn');
+           const agentDisplaySection = document.getElementById('agent-display-section');
+           const agentTitle = document.getElementById('agent-title');
+           const connectPosBtn = document.getElementById('connect-pos-btn');
+           const posIdInput = document.getElementById('pos-id-input');
+           const posProviderSelect = document.getElementById('pos-provider-select');
+           const connectBtn = document.getElementById('connect-btn');
+           const cancelPosBtn = document.getElementById('cancel-pos-btn');
+           const metricsGrid = document.getElementById('metrics-grid');
+           const chartSection = document.getElementById('chart-section');
+           const posProviderDisplay = document.getElementById('pos-provider-display');
+           const posIdDisplay = document.getElementById('pos-id-display');
+           const toastMessage = document.getElementById('toast-message');
+           
+           let revenueChart = null; 
+
+           // --- Helper Functions ---
+           const showToast = (message) => {
+               toastMessage.textContent = message;
+               toastMessage.style.bottom = '20px';
+               setTimeout(() => {
+                   toastMessage.style.bottom = '-100px';
+               }, 3000);
+           };
+
+           const noDataTextPlugin = {
+               id: 'noDataTextPlugin',
+               afterDraw: (chart) => {
+                   const isDataEmpty = chart.data.datasets.every(ds => 
+                       ds.data.every(point => point === 0 || point === null || point === undefined)
+                   );
+
+                   if (isDataEmpty) {
+                       const { ctx, width, height } = chart;
+                       ctx.save();
+                       ctx.textAlign = 'center';
+                       ctx.textBaseline = 'middle';
+                       ctx.font = "6
